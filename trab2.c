@@ -12,21 +12,40 @@
 
 
 int variavelUnica = 0;// variável que as threads poderam ler ou modificar seu valor
-sem_t controle; //semaforo
+sem_t controle;//semaforo para controlar a ordem execução thread escritora e thread leitora
+mutex_t acessoVariavel; //permite que uma thread leitora altere por vez o valor da variávelUnica 
+
+void escreve (FILE *arquivo, int tipo){}
 
 void leitor(){
+	
+	//wait controle
+	int id = (void) tid;
+	FILE *arquivo;
+	arquivo = fopen( id.txt, a);
 	
 
 
 }
 
-void escritor(){
+void escritor( void *tid){
+		
+	int id = (void) tid;
 	
-
+	//wait controle
+	//pthread_mutex_lock(acessoVariavel);
+	variavelUnica = id;
+	// escreve no arquivo de log
+	// thread %i, id escreveu 
+	//Vê a lógica implementada pra saber 
+	//post controle e deixa 
+	//pthread_mutex_unlock(acessoVaraiavel)
+	
 }
 
 
 int main(int argc, char *argv[]){
+	
 
 	int numThreadsLeitoras;
 	int numThreadsEscritoras;
