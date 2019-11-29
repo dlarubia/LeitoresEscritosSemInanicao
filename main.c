@@ -5,23 +5,34 @@
 
 int variavelCompartilhada = 0;
 pthread_mutex_t acessoVariavel;
+pthread_cond_t acessoEscrita;
+int statusEscrita = 0;
+sem_t controleEntreThreads, controleLeitoras;
 
 void escritor(void *threadId){
     int tid = *(int*) threadId;
-
+    sem_wait(&controleEntreThreads);
     pthread_mutex_lock(&acessoVariavel);
+    while(statusEscrita){
+        printf("Thread escritora %d: bloqueada...\n", tid);
+        pthread_cond_wait(&acessoEscrita, &acessoVariavel);
+    }
+    statusEscrita++;
     variavelCompartilhada = tid;
-
-    printf("%d %d\n", variavelCompartilhada, tid);
+    printf("Thread escritora %d rodou e variavel = %d\n", variavelCompartilhada, tid);
+    sem_post(&controleLeitoras);
 
     pthread_mutex_unlock(&acessoVariavel);
+    statusEscrita--;
 
 }
 
 
 void leitor(void *threadId){
     int tid = *(int*) threadId;
-    printf("%d\n", tid);
+    sem_wait(&controleLeitoras);
+    printf("Thread leitora %d: fazendo leitura...\n", tid);
+
 }
 
 int main (int argc, char *argv[]){
@@ -34,8 +45,10 @@ int main (int argc, char *argv[]){
     pthread_t tid[totalThreads];
     int *id[totalThreads], i;
 
+    sem_init(&controleEntreThreads, 0, 1);
+    sem_init(&controleLeitoras, 0, 1);
 	/**
-    //Leitura entrada padr„o
+    //Leitura entrada padr√£o
 	printf("Entre com o numero de threads escritoras\n");
 	scanf("%d", &numThreadsEscritoras);
 	printf("Entre com o numero de threads leitoras\n");
@@ -55,16 +68,17 @@ int main (int argc, char *argv[]){
         }
         *id[i] = i+1;
     }
+    for(i = 0; i < numThreadsEscritoras; i++) {
+        if(pthread_create(&tid[i+ numThreadsLeitoras], NULL, escritor, (void *)id[i])){
+            exit(-1);
+        }
+    }
     for(i = 0; i < numThreadsLeitoras; i++) {
         if(pthread_create(&tid[i], NULL, leitor, (void *)id[i])){
             exit(-1);
         }
     }
-      for(i = 0; i < numThreadsEscritoras; i++) {
-        if(pthread_create(&tid[i+ numThreadsLeitoras], NULL, escritor, (void *)id[i])){
-            exit(-1);
-        }
-    }
+
 
     for (i=0; i<totalThreads; i++) {
         if (pthread_join(tid[i], NULL)) {
