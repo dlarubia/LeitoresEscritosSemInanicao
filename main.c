@@ -5,15 +5,17 @@
 
 int variavelCompartilhada = 0;
 pthread_mutex_t acessoVariavel;
-pthread_cond_t acessoEscrita;
+pthread_cond_t acessoEscrita, liberaLeitoras;
 int statusEscrita = 0;
 sem_t controleEntreThreads, controleLeitoras;
+int lidos=0;
 
 void escritor(void *threadId){
+
     int tid = *(int*) threadId;
     sem_wait(&controleEntreThreads);
     pthread_mutex_lock(&acessoVariavel);
-    while(statusEscrita){
+    if(statusEscrita){
         printf("Thread escritora %d: bloqueada...\n", tid);
         pthread_cond_wait(&acessoEscrita, &acessoVariavel);
     }
@@ -21,18 +23,24 @@ void escritor(void *threadId){
     variavelCompartilhada = tid;
     printf("Thread escritora %d rodou e variavel = %d\n", variavelCompartilhada, tid);
     sem_post(&controleLeitoras);
-
     pthread_mutex_unlock(&acessoVariavel);
     statusEscrita--;
+
 
 }
 
 
 void leitor(void *threadId){
     int tid = *(int*) threadId;
+    pthread_cond_wait(&liberaLeitoras, &acessoVariavel);
     sem_wait(&controleLeitoras);
-    printf("Thread leitora %d: fazendo leitura...\n", tid);
+    printf("Thread leitora %d: fazendo leitura... valor leitura %d\n", tid, variavelCompartilhada);
+    lidos++;
+    if(lidos == 1) {
+            pthread_cond_broadcast(&liberaLeitoras);
 
+    }
+    sem_post(&controleEntreThreads);
 }
 
 int main (int argc, char *argv[]){
