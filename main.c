@@ -15,16 +15,17 @@ void escritor(void *threadId){
     int tid = *(int*) threadId;
     sem_wait(&controleEntreThreads);
     pthread_mutex_lock(&acessoVariavel);
-    if(statusEscrita){
+    if(statusEscrita == 1){
         printf("Thread escritora %d: bloqueada...\n", tid);
         pthread_cond_wait(&acessoEscrita, &acessoVariavel);
     }
-    statusEscrita++;
+    statusEscrita = 1;
     variavelCompartilhada = tid;
-    printf("Thread escritora %d rodou e variavel = %d\n", variavelCompartilhada, tid);
+    printf("Thread escritora %d rodou e variavel = %d, numEscrita = %d\n", variavelCompartilhada, tid);
     sem_post(&controleLeitoras);
+
     pthread_mutex_unlock(&acessoVariavel);
-    statusEscrita--;
+    statusEscrita = 0;
 
 
 }
@@ -34,21 +35,17 @@ void leitor(void *threadId){
     int tid = *(int*) threadId;
     pthread_cond_wait(&liberaLeitoras, &acessoVariavel);
     sem_wait(&controleLeitoras);
-    printf("Thread leitora %d: fazendo leitura... valor leitura %d\n", tid, variavelCompartilhada);
-    lidos++;
-    if(lidos == 1) {
-            pthread_cond_broadcast(&liberaLeitoras);
-
-    }
+    printf("Thread leitora %d: fazendo leitura... valor leitura %d\n", tid);
+    pthread_cond_broadcast(&liberaLeitoras);
     sem_post(&controleEntreThreads);
 }
 
 int main (int argc, char *argv[]){
 
-    int numThreadsLeitoras = 6;
-	int numThreadsEscritoras = 10;
-	int numLeitura = 0;
-	int numEscrita = 0;
+    int numThreadsLeitoras = 9 ;
+	int numThreadsEscritoras = 3;
+	int numLeitura = 1;
+	int numEscrita = 1;
     int totalThreads = numThreadsEscritoras + numThreadsLeitoras;
     pthread_t tid[totalThreads];
     int *id[totalThreads], i;
