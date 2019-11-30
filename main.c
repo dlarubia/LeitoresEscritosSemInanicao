@@ -33,8 +33,8 @@ int writeStatus = 0;
 int threadsReading = 0;
 
 // quantidade de leituras e escritas será efetuada
-int readings = 1000;
-int writings = 1000;
+int readings = 1000000000;
+int writings = 1000000000;
 int sharedVariable = -1;
 
 
