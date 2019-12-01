@@ -3,20 +3,6 @@
 #include <semaphore.h>
 #include <pthread.h>
 
-/*
-
-int variavelCompartilhada = 0;
-int statusEscrita = 0;
-int lidos = 0;
-//statusVariavel vai funcionar como um detector se a thread está sendo escrita ou não. Pode ser desnecessário
-int statusVariavel = 0;
-pthread_mutex_t acessoVariavel;
-pthread_cond_t acessoEscrita, liberaLeitoras;
-sem_t controleEntreThreads, controleLeitoras;
-*/
-
-// ########################################
-
 // controle de threads escritoras realizando escrita
 sem_t writeSemaphore;
 pthread_mutex_t mutex_r, mutex_w, status;
@@ -25,7 +11,7 @@ pthread_mutex_t mutex_r, mutex_w, status;
 pthread_cond_t permissionToWrite, permissionToRead;
 sem_t readers;
 sem_t writers;
-
+sem_t permissionToContinue;
 
 // boolean ==> threads leitoras não podem ler enquanto está ocorrendo escrita
 int writeStatus = 0;
@@ -33,14 +19,15 @@ int writeStatus = 0;
 int threadsReading = 0;
 
 // quantidade de leituras e escritas será efetuada
-int readings = 1000000000;
-int writings = 1000000000;
+int readings = 100;
+int writings = 100;
 int sharedVariable = -1;
 
 
 
 void *writer(void *id) {
     int tid = *(int *) id;
+    printf("A thread %d foi inicializada como ==> ESCRITORA <==.\n", tid);
 
     //apenas uma escritora por vez
     pthread_mutex_lock(&mutex_w);
@@ -62,17 +49,23 @@ void *writer(void *id) {
 
         writeStatus = 0;
         pthread_cond_broadcast(&permissionToRead);
+        
+        sem_wait(&permissionToContinue);
+
         sem_post(&writeSemaphore);
 
         pthread_mutex_lock(&mutex_w);
     }
     pthread_mutex_unlock(&mutex_w);
+    printf("A thread %d encerrou como ==> ESCRITORA <==.\n", tid);
 
+    pthread_exit(NULL);
 }
 
 
 void *reader(void *id) {
     int tid = *(int *) id;
+    printf("A thread %d foi inicializada como ==> LEITORA <==.\n", tid);
 
     pthread_mutex_lock(&mutex_r);
     while (readings > 0) {
@@ -92,69 +85,17 @@ void *reader(void *id) {
 
         printf("A thread %d realizou a leitura. Valor ==> %d \n", tid, sharedVariable);
 
+        sem_post(&permissionToContinue);
 
         pthread_mutex_lock(&mutex_r);
     }
     pthread_mutex_unlock(&mutex_r);
+    printf("A thread %d encerrou como ==> LEITORA <==.\n", tid);
 
-
-
-}
-
-/*
-void escritor(void *tid){
-    int tid = *(int*) tid;
-
-    // semáforo binário para exclusão mútua ==> 
-    sem_wait(&controleEntreThreads);
-
-    //lock variavel ==> statusEscrita
-    pthread_mutex_lock(&acessoVariavel);
-
-    if(statusEscrita){
-        printf("Thread escritora %d: bloqueada...\n", tid);
-        pthread_cond_wait(&acessoEscrita, &acessoVariavel);
-    }
-
-    //variavel que define a quantidade de escritas que já ocorreram, funciona como uma condicional (escritas == 0, fim da execução)
-    statusEscrita++;
-
-    //variavel compartilhada ==> recebe o ID da thread
-    variavelCompartilhada = tid;
-    printf("Thread escritora %d rodou e variavel = %d\n", variavelCompartilhada, tid);
-
-    //libera o semáforo (++)
-    sem_post(&controleLeitoras);
-
-    //unlock variavel ==> statusEscrita
-    pthread_mutex_unlock(&acessoVariavel);
-
-    // talvez um erro lógico aqui * * * * * * * * *
-    statusEscrita--;
-
-
+    pthread_exit(NULL);
 }
 
 
-
-void leitor(void *tid){
-    int tid = *(int *) tid;
-
-    // aguarda liberação por parte da thread ESCRITORA
-    pthread_cond_wait(&liberaLeitoras, &acessoVariavel);
-
-    // semáforo para controle de threads leitoras? 
-    sem_wait(&controleLeitoras);
-    printf("Thread leitora %d: fazendo leitura... valor leitura %d\n", tid, variavelCompartilhada);
-    lidos++;
-    if(lidos == 1) {
-            pthread_cond_broadcast(&liberaLeitoras);
-
-    }
-    sem_post(&controleEntreThreads);
-}
-
-*/
 
 int main (int argc, char *argv[]) {
 
@@ -164,86 +105,46 @@ int main (int argc, char *argv[]) {
     pthread_t *systemTID;
     int *tid;
 
+    sem_init(&writers, 0, 1);
+    sem_init(&readers, 0, 1);
+    sem_init(&writeSemaphore, 0, 1);
+    sem_init(&permissionToContinue, 0, 0);
+
+    pthread_mutex_init(&mutex_r, NULL);
+    pthread_mutex_init(&mutex_w, NULL);
+    pthread_mutex_init(&status, NULL);
+
 
     systemTID = (pthread_t *) malloc(sizeof(pthread_t) * threadsNumber);
-    if(systemTID == NULL) {
-        printf("--ERROR: malloc()\n");
-        exit(-1);
-    }
-
-    
-    for(int id = 0; id < threadsNumber; id++) {
-        tid = malloc(sizeof(int));
-        if(tid == NULL) {
-            printf("--ERRO: malloc()\n");
-            exit(-1);
+    int *id_w;
+    int *id_r;
+    int i;
+    for (i = 0; i < threadsNumber; i++) {
+        if (id_w = malloc(sizeof(int))) {
+            *id_w = i;
         }
 
-        *tid = id;
-        if(pthread_create(&systemTID[id], NULL, writer, (void *) tid)) {
-            printf("--ERRO: pthread_create( writers )\n");
-            exit(-1);
-        }
-
-        int reader_id = id + writersNumber;
-        *tid = id + writersNumber;
-        if(pthread_create(&systemTID[reader_id], NULL, reader, (void *) tid)) {
-            printf("--ERRO: pthread_create( reader )\n");
-            exit(-1);
+        if(writersNumber > i) {
+            pthread_create(&systemTID[i], NULL, writer, (void *) id_w);
         }
     }
 
-    /*
-    int numThreadsLeitoras = 6;
-	int numThreadsEscritoras = 10;
-	int numLeitura = 0;
-	int numEscrita = 0;
-    int totalThreads = numThreadsEscritoras + numThreadsLeitoras;
-    pthread_t tid[totalThreads];
-    int *id[totalThreads], i;
-
-    sem_init(&controleEntreThreads, 0, 1);
-    sem_init(&controleLeitoras, 0, 1);
- 
-
-    //Leitura entrada padrão
-	printf("Entre com o numero de threads escritoras\n");
-	scanf("%d", &numThreadsEscritoras);
-	printf("Entre com o numero de threads leitoras\n");
-	scanf("%d", &numThreadsLeitoras);
-	printf("Entre com o numero de escritas\n");
-	scanf("%d", &numEscrita);
-	printf("Entre com o numero de leituras\n");
-	scanf("%d", &numLeitura);
+    for (int k = 0; k < threadsNumber; k++) {
+        if (id_r = malloc(sizeof(int))) {
+            *id_r = k + writersNumber;
+        }
     
 
-
-
-    for(i = 0; i<totalThreads; i++) {
-        if((id[i] = malloc(sizeof(int))) == NULL) {
-            pthread_exit(NULL);
-            return 1;
-        }
-        *id[i] = i+1;
-    }
-    for(i = 0; i < numThreadsEscritoras; i++) {
-        if(pthread_create(&tid[i+ numThreadsLeitoras], NULL, escritor, (void *)id[i])){
-            exit(-1);
-        }
-    }
-    for(i = 0; i < numThreadsLeitoras; i++) {
-        if(pthread_create(&tid[i], NULL, leitor, (void *)id[i])){
-            exit(-1);
+        if(readersNumber > k) {
+            pthread_create(&systemTID[k + writersNumber], NULL, reader, (void*) id_r);
         }
     }
 
 
-    for (i=0; i<totalThreads; i++) {
-        if (pthread_join(tid[i], NULL)) {
-            printf("--ERRO: pthread_join() \n"); exit(-1);
+    for(int j = 0; j < threadsNumber; j++) {
+        printf("Aguardando encerramento da thread: %d\n", j);
+        pthread_join(systemTID[j], NULL);
     }
-  }
 
-*/
     return 0;
 }
