@@ -239,6 +239,22 @@ int main (int argc, char *argv[]) {
     pthread_mutex_init(&flag, NULL);
     pthread_mutex_init(&bar, NULL);
     pthread_cond_init(&cond_bar, NULL);
+    
+    /**
+    int readersNumber;
+    int writersNumber;
+    int writings, readings;
+    
+    //Leitura entrada padrão
+	printf("Entre com o numero de threads escritoras\n");
+	scanf("%d", &writersNumber);
+	printf("Entre com o numero de threads leitoras\n");
+	scanf("%d", &readersNumber);
+	printf("Entre com o numero de escritas\n");
+	scanf("%d", &writings);
+	printf("Entre com o numero de leituras\n");
+	scanf("%d", &readings);
+    **/
 
 
     //Inicialização de threads
