@@ -1,0 +1,1 @@
+print("VAMOS COMEÇAR A BRINCADEIRA")
