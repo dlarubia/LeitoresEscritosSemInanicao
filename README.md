@@ -26,6 +26,4 @@ Programa Principal (main.c) -> Implementado em C, realiza as execuções das thr
 <br>$cd LeitoresEscritosSemInanicao
 <br>$make
  
-<br>2)Para executar
-<br>./main
- 
+
