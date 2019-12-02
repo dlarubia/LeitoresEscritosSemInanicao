@@ -77,6 +77,8 @@ void *writer(void *id) {
 
     }
     printf("A thread %d foi encerrada.\n", tid);
+
+    pthread_exit(NULL);
 }
 
 
@@ -105,8 +107,6 @@ void *reader(void *id) {
         //pthread_mutex_lock(&printControl);
         turn = (turn + 1) % 2;
         pthread_mutex_unlock(&turnProtection);
-        
-        sleep(1);
 
         pthread_cond_signal(&permissionToRead);
         pthread_cond_signal(&permissionToWrite);
@@ -117,6 +117,8 @@ void *reader(void *id) {
         }
     }
     printf("A thread %d foi encerrada.\n", tid);
+
+    pthread_exit(NULL);
 }
 
 
@@ -229,7 +231,6 @@ int main (int argc, char *argv[]) {
     //Instanciação de variáveis
     int threadsNumber = readersNumber + writersNumber;
     pthread_t *systemTID;
-    int *tid;
 
     //Inicialização de semáforos e mutex
     pthread_mutex_init(&readingsControl, NULL);
@@ -246,7 +247,7 @@ int main (int argc, char *argv[]) {
     int *id_r;
     int i;
     for (i = 0; i < threadsNumber; i++) {
-        if (id_w = malloc(sizeof(int))) {
+        if ((id_w = malloc(sizeof(int)))) {
             *id_w = i;
         }
 
@@ -256,7 +257,7 @@ int main (int argc, char *argv[]) {
     }
 
     for (int k = 0; k < threadsNumber; k++) {
-        if (id_r = malloc(sizeof(int))) {
+        if ((id_r = malloc(sizeof(int)))) {
             *id_r = k + writersNumber;
         }
     
