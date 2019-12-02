@@ -43,8 +43,8 @@ void *writer(void *id) {
 
         pthread_mutex_lock(&turnProtection);
         printf("A thread %d está aguardando permissão para escrita.\n", tid);
-        fprintf(fp, "quantificadorDeOperacoes(%d, %d)\n", tid, 0);
         while (turn != 0) {
+            fprintf(fp, "quantificadorDeOperacoes(%d, %d)\n", tid, 0);
             pthread_cond_wait(&permissionToWrite, &turnProtection);
         }
         turn = (turn + 1) % 2;
@@ -88,8 +88,8 @@ void *reader(void *id) {
 
         pthread_mutex_lock(&turnProtection);
         printf("A thread %d está aguardando permissão para leitura.\n", tid);
-        fprintf(fp, "quantificadorDeOperacoes(%d, %d)\n", tid, 0);
         while (turn != 1) {
+            fprintf(fp, "quantificadorDeOperacoes(%d, %d)\n", tid, 0);
             pthread_cond_wait(&permissionToRead, &turnProtection);
         }
         //pthread_mutex_lock(&printControl);
