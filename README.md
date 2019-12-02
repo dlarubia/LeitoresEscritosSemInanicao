@@ -10,9 +10,18 @@ O trabalho aborda o problema dos leitores/escritores, um problema clássico de c
 • não é  permitido ler e escrever ao mesmo tempo.
 A implementação deve garantir a ausência de inanição entre as threads.
 
+E implementação de um programa auxiliar que checa a execuação do programa principal, avaliando se a mesma foi realizada com sucesso.
+
+DIVISÃO DO PROJETO 
+
+Programa Principal (main.c) -> Implementado em C, realiza as execuções das threads leitoras e escritoras respeitando as condições lógicas e outras restrições solicitadas pelo trabalho.
+Programa Auxiliar (checkOperations.py) -> Implementado em Python, tem como entrada o log gerado pelo programa principal. Responsável por checar se a execução do programa principal foi bem sucedida ou não.
+Makefile -> Instrui como compilar e linkar os programas. 
+
 
 COMO EXECUTAR O PROGRAMA
 
+PROGRAMA PRINCIPAL (MAIN.C)
 1)Para compilar digite no terminal
 
  $cd LeitoresEscritosSemInanicao
