@@ -50,10 +50,10 @@ void *leitora(void * thread_id) {
     while (1) {
         sem_wait(&leitura);
         pthread_mutex_lock(&mutex2);
-        if(leitora == 1) {
+        if(leitor == 1) {
             sem_wait(&escrita);
         }
-        pthread_mutex_unlock(&leitura);
+        pthread_mutex_unlock(&mutex2);
 
         sem_post(&leitura);
         printf("A thread %d realizou a leitura do valor: %d\n", tid, variavelCompartilhada);
@@ -86,13 +86,13 @@ int main (int argc, char *argv[]) {
     for(i = 0; i < nthreads_escritoras; i++) {
         if(tid = malloc(sizeof(int)))
             *tid = i;
-        pthread_create(&systemTID[i], NULL, escritor, (void *) tid);
+        pthread_create(&systemTID[i], NULL, escritora, (void *) tid);
     }
 
     for(k = 0; k < nthreads_leitoras; k++) {
         if(tid = malloc(sizeof(int)))
             *tid = i + k;
-        pthread_create(&systemTID[i], NULL, leitor, (void *) tid);
+        pthread_create(&systemTID[i], NULL, leitora, (void *) tid);
     }
 
     for(j = 0; j < nthreads; j++) {
