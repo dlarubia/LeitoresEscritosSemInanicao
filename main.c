@@ -3,37 +3,23 @@
 #include <semaphore.h>
 #include <pthread.h>
 
-
-// boolean ==> threads leitoras não podem ler enquanto está ocorrendo escrita
-int writeStatus = 0;
-
-int threadsReading = 0;
-int threadsWriting = 0;
-
 // quantidade de leituras e escritas será efetuada
-int readings = 200;
-int writings = 200;
+int readings, writings;
 int sharedVariable = -1;
 
-int readersNumber = 10;
-int writersNumber = 10;
+int readersNumber,writersNumber;
 FILE *fp;
-
-pthread_mutex_t mutex_r, mutex_w;
-sem_t writers, readers;
-
 
 // Barreira
 pthread_mutex_t bar;
 pthread_cond_t cond_bar;
 
-pthread_mutex_t writingsControl, readingsControl, turnProtection, printControl, flag;
+pthread_mutex_t writingsControl, readingsControl, turnProtection;
 pthread_cond_t permissionToWrite, permissionToRead;
 int turn = 0;  //Turn = 0: Escritoras -- Turn = 1: Leitoras
-int busyState = 0;
+//int busyState = 0;
 int counter = 0;
-int w_end = 0;
-int flag_ = 0;
+
 
 void barreira();
 
@@ -126,96 +112,7 @@ void *reader(void *id) {
     pthread_exit(NULL);
 }
 
-
-/*
-void *reader2(void *id) {
-    int tid = *(int *) id;
-    printf("A thread %d iniciou como LEITORA.\n", tid);
-    
-
-    while(1) {
-        pthread_mutex_lock(&readingsControl);
-        if(readings > 0) {
-            readings--;
-            pthread_mutex_unlock(&readingsControl);
-        }
-        else {
-            pthread_mutex_unlock(&readingsControl);
-            break;
-        }
-
-        pthread_mutex_lock(&turnProtection);
-        printf("A thread %d está aguardando permissão para leitura.\n", tid);
-        while (turn == 0) {
-            pthread_cond_wait(&permissionToRead, &turnProtection);
-        }
-        //pthread_mutex_lock(&printControl);
-        //pthread_mutex_lock(&printControl);
-        turn = (turn + 1) % readersNumber;
-        pthread_mutex_unlock(&turnProtection);
-        
-        barreira();
-        printf("A thread %d leu a variável compartilhada com o valor -> %d\n", tid, sharedVariable);
-
-        sleep(1);
-
-        pthread_cond_signal(&permissionToRead);
-        pthread_cond_signal(&permissionToWrite);
-
-        while(readings == 0 && writings > 0) {
-            pthread_cond_signal(&permissionToWrite);
-            //printf("Escritas restantes: %d", writings);
-        }
-    }
-    printf("A thread %d foi encerrada.\n", tid);
-}
-
-
-void *writer2(void *id) {
-    int tid = *(int *) id;
-    printf("A thread %d iniciou como ESCRITORA.\n", tid);
-
-    while(1) {
-
-        //sem_wait(&singleWriters);
-
-        pthread_mutex_lock(&writingsControl);
-        if(writings > 0) {
-            writings--;
-            pthread_mutex_unlock(&writingsControl);
-        }
-        else {
-            pthread_mutex_unlock(&writingsControl);
-            break;
-        }
-
-        pthread_mutex_lock(&turnProtection);
-        printf("A thread %d está aguardando permissão para escrita.\n", tid);
-        while (turn != 0) {
-            pthread_cond_wait(&permissionToWrite, &turnProtection);
-        }
-        turn = (turn + 1) % 2;
-
-        sharedVariable = tid;
-
-        //pthread_mutex_lock(&printControl);
-        printf("A thread %d escreveu o valor -> %d <-\n", tid, sharedVariable);
-        //pthread_mutex_unlock(&printControl);
-        pthread_mutex_unlock(&turnProtection);
-
-        pthread_cond_broadcast(&permissionToRead);
-        //sem_post(&singleWriters);
-
-        while(writings == 0 && readings > 0) {
-            pthread_cond_broadcast(&permissionToRead);
-            //printf("Leituras restantes: %d", readings);
-        }
-
-    }
-    printf("A thread %d foi encerrada.\n", tid);
-}
-*/
-
+// Acabou não sendo utilizada por causar deadlock e eu não conseguir resolver
 void barreira() {
     pthread_mutex_lock(&bar);
     counter++;
@@ -242,7 +139,6 @@ int main (int argc, char *argv[]) {
     pthread_mutex_init(&readingsControl, NULL);
     pthread_mutex_init(&writingsControl, NULL);
     pthread_mutex_init(&turnProtection, NULL);
-    pthread_mutex_init(&flag, NULL);
     pthread_mutex_init(&bar, NULL);
     pthread_cond_init(&cond_bar, NULL);
 
@@ -256,6 +152,7 @@ int main (int argc, char *argv[]) {
 	scanf("%d", &writings);
 	printf("Entre com o numero de leituras\n");
 	scanf("%d", &readings);
+    threadsNumber = writersNumber + readersNumber;
     
     fprintf(fp, "inicializaEstruturas(%d, %d, %d, %d)\n", readersNumber, writersNumber, readings, writings);
 
