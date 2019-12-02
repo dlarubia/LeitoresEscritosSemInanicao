@@ -289,5 +289,7 @@ int main (int argc, char *argv[]) {
         pthread_join(systemTID[j], NULL);
     }
 
+    printf("\nFim da execução do programa principal.\n\n\n");
+
     return 0;
 }
