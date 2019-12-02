@@ -15,7 +15,7 @@ int readings = 20;
 int writings = 20;
 int sharedVariable = -1;
 
-int readersNumber = 3;
+int readersNumber = 2;
 int writersNumber = 3;
 
 pthread_mutex_t mutex_r, mutex_w;
@@ -80,8 +80,8 @@ void *reader2(void *id) {
         }
 
         pthread_mutex_lock(&turnProtection);
+        printf("A thread %d está aguardando permissão para leitura.\n", tid);
         while (turn != 1) {
-            printf("A thread %d está aguardando permissão para leitura.\n", tid);
             pthread_cond_wait(&permissionToRead, &turnProtection);
         }
         //pthread_mutex_lock(&printControl);
@@ -90,7 +90,9 @@ void *reader2(void *id) {
         turn = (turn + 1) % 2;
         pthread_mutex_unlock(&turnProtection);
         
+        sleep(1);
 
+        pthread_cond_signal(&permissionToRead);
         pthread_cond_signal(&permissionToWrite);
 
         while(readings == 0 && writings > 0) {
@@ -121,8 +123,8 @@ void *writer2(void *id) {
         }
 
         pthread_mutex_lock(&turnProtection);
+        printf("A thread %d está aguardando permissão para escrita.\n", tid);
         while (turn != 0) {
-            printf("A thread %d está aguardando permissão para escrita.\n", tid);
             pthread_cond_wait(&permissionToWrite, &turnProtection);
         }
         turn = (turn + 1) % 2;
