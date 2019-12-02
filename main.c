@@ -22,89 +22,21 @@ pthread_mutex_t mutex_r, mutex_w;
 sem_t writers, readers;
 
 
+// Barreira
+pthread_mutex_t bar;
+pthread_cond_t cond_bar;
 
-pthread_mutex_t writingsControl, readingsControl, turnProtection, printControl;
+pthread_mutex_t writingsControl, readingsControl, turnProtection, printControl, flag;
 pthread_cond_t permissionToWrite, permissionToRead;
 int turn = 0;  //Turn = 0: Escritoras -- Turn = 1: Leitoras
+int busyState = 0;
+int counter = 0;
+int w_end = 0;
+int flag_ = 0;
 
+void barreira();
 
 void *writer(void *id) {
-    int tid = *(int *) id;
-    printf("A thread %d foi inicializada como ==> ESCRITORA <==\n", tid);
-
-    pthread_mutex_lock(&writingsControl);
-    while (writings > 0) {
-        writings--;
-        pthread_mutex_unlock(&writingsControl);
-        printf("A thread %d escreveu\n", tid);
-
-    }
-    pthread_mutex_unlock(&writingsControl);
-    printf("A thread %d encerrou como ==> ESCRITORA <==.\n", tid);
-
-    pthread_exit(NULL);
-}
-
-
-void *reader(void *id) {
-    int tid = *(int *) id;
-    printf("A thread %d foi inicializada como ==> LEITORA <==.\n", tid);
-
-    pthread_mutex_lock(&readingsControl);
-    while (readings > 0) {
-        readings--;
-        pthread_mutex_unlock(&readingsControl);
-        printf("A thread %d leu\n", tid);
-    }
-    pthread_mutex_unlock(&mutex_r);
-    printf("A thread %d encerrou como ==> LEITORA <==.\n", tid);
-
-    pthread_exit(NULL);
-}
-
-
-
-void *reader2(void *id) {
-    int tid = *(int *) id;
-    printf("A thread %d iniciou como LEITORA.\n", tid);
-
-    while(1) {
-        pthread_mutex_lock(&readingsControl);
-        if(readings > 0) {
-            readings--;
-            pthread_mutex_unlock(&readingsControl);
-        }
-        else {
-            pthread_mutex_unlock(&readingsControl);
-            break;
-        }
-
-        pthread_mutex_lock(&turnProtection);
-        printf("A thread %d está aguardando permissão para leitura.\n", tid);
-        while (turn != 1) {
-            pthread_cond_wait(&permissionToRead, &turnProtection);
-        }
-        //pthread_mutex_lock(&printControl);
-        printf("A thread %d leu a variável compartilhada com o valor -> %d\n", tid, sharedVariable);
-        //pthread_mutex_lock(&printControl);
-        turn = (turn + 1) % 2;
-        pthread_mutex_unlock(&turnProtection);
-        
-        sleep(1);
-
-        pthread_cond_signal(&permissionToRead);
-        pthread_cond_signal(&permissionToWrite);
-
-        while(readings == 0 && writings > 0) {
-            pthread_cond_signal(&permissionToWrite);
-            //printf("Escritas restantes: %d", writings);
-        }
-    }
-    printf("A thread %d foi encerrada.\n", tid);
-}
-
-
-void *writer2(void *id) {
     int tid = *(int *) id;
     printf("A thread %d iniciou como ESCRITORA.\n", tid);
 
@@ -148,6 +80,148 @@ void *writer2(void *id) {
 }
 
 
+void *reader(void *id) {
+      int tid = *(int *) id;
+    printf("A thread %d iniciou como LEITORA.\n", tid);
+
+    while(1) {
+        pthread_mutex_lock(&readingsControl);
+        if(readings > 0) {
+            readings--;
+            pthread_mutex_unlock(&readingsControl);
+        }
+        else {
+            pthread_mutex_unlock(&readingsControl);
+            break;
+        }
+
+        pthread_mutex_lock(&turnProtection);
+        printf("A thread %d está aguardando permissão para leitura.\n", tid);
+        while (turn != 1) {
+            pthread_cond_wait(&permissionToRead, &turnProtection);
+        }
+        //pthread_mutex_lock(&printControl);
+        printf("A thread %d leu a variável compartilhada com o valor -> %d\n", tid, sharedVariable);
+        //pthread_mutex_lock(&printControl);
+        turn = (turn + 1) % 2;
+        pthread_mutex_unlock(&turnProtection);
+        
+        sleep(1);
+
+        pthread_cond_signal(&permissionToRead);
+        pthread_cond_signal(&permissionToWrite);
+
+        while(readings == 0 && writings > 0) {
+            pthread_cond_signal(&permissionToWrite);
+            //printf("Escritas restantes: %d", writings);
+        }
+    }
+    printf("A thread %d foi encerrada.\n", tid);
+}
+
+
+/*
+void *reader2(void *id) {
+    int tid = *(int *) id;
+    printf("A thread %d iniciou como LEITORA.\n", tid);
+    
+
+    while(1) {
+        pthread_mutex_lock(&readingsControl);
+        if(readings > 0) {
+            readings--;
+            pthread_mutex_unlock(&readingsControl);
+        }
+        else {
+            pthread_mutex_unlock(&readingsControl);
+            break;
+        }
+
+        pthread_mutex_lock(&turnProtection);
+        printf("A thread %d está aguardando permissão para leitura.\n", tid);
+        while (turn == 0) {
+            pthread_cond_wait(&permissionToRead, &turnProtection);
+        }
+        //pthread_mutex_lock(&printControl);
+        //pthread_mutex_lock(&printControl);
+        turn = (turn + 1) % readersNumber;
+        pthread_mutex_unlock(&turnProtection);
+        
+        barreira();
+        printf("A thread %d leu a variável compartilhada com o valor -> %d\n", tid, sharedVariable);
+
+        sleep(1);
+
+        pthread_cond_signal(&permissionToRead);
+        pthread_cond_signal(&permissionToWrite);
+
+        while(readings == 0 && writings > 0) {
+            pthread_cond_signal(&permissionToWrite);
+            //printf("Escritas restantes: %d", writings);
+        }
+    }
+    printf("A thread %d foi encerrada.\n", tid);
+}
+
+
+void *writer2(void *id) {
+    int tid = *(int *) id;
+    printf("A thread %d iniciou como ESCRITORA.\n", tid);
+
+    while(1) {
+
+        //sem_wait(&singleWriters);
+
+        pthread_mutex_lock(&writingsControl);
+        if(writings > 0) {
+            writings--;
+            pthread_mutex_unlock(&writingsControl);
+        }
+        else {
+            pthread_mutex_unlock(&writingsControl);
+            break;
+        }
+
+        pthread_mutex_lock(&turnProtection);
+        printf("A thread %d está aguardando permissão para escrita.\n", tid);
+        while (turn != 0) {
+            pthread_cond_wait(&permissionToWrite, &turnProtection);
+        }
+        turn = (turn + 1) % 2;
+
+        sharedVariable = tid;
+
+        //pthread_mutex_lock(&printControl);
+        printf("A thread %d escreveu o valor -> %d <-\n", tid, sharedVariable);
+        //pthread_mutex_unlock(&printControl);
+        pthread_mutex_unlock(&turnProtection);
+
+        pthread_cond_broadcast(&permissionToRead);
+        //sem_post(&singleWriters);
+
+        while(writings == 0 && readings > 0) {
+            pthread_cond_broadcast(&permissionToRead);
+            //printf("Leituras restantes: %d", readings);
+        }
+
+    }
+    printf("A thread %d foi encerrada.\n", tid);
+}
+*/
+
+void barreira() {
+    pthread_mutex_lock(&bar);
+    counter++;
+    if(counter < readersNumber) {
+        pthread_cond_wait(&cond_bar, &bar);
+    }
+
+    else {
+        counter = 0;
+        pthread_cond_broadcast(&cond_bar);
+    }
+    pthread_mutex_unlock(&bar);
+}
 
 
 int main (int argc, char *argv[]) {
@@ -160,8 +234,10 @@ int main (int argc, char *argv[]) {
     //Inicialização de semáforos e mutex
     pthread_mutex_init(&readingsControl, NULL);
     pthread_mutex_init(&writingsControl, NULL);
-    //pthread_mutex_init(&printControl, NULL);
-    //pthread_mutex_init(&turnProtection, NULL);
+    pthread_mutex_init(&turnProtection, NULL);
+    pthread_mutex_init(&flag, NULL);
+    pthread_mutex_init(&bar, NULL);
+    pthread_cond_init(&cond_bar, NULL);
 
 
     //Inicialização de threads
@@ -175,7 +251,7 @@ int main (int argc, char *argv[]) {
         }
 
         if(writersNumber > i) {
-            pthread_create(&systemTID[i], NULL, writer2, (void *) id_w);
+            pthread_create(&systemTID[i], NULL, writer, (void *) id_w);
         }
     }
 
@@ -186,7 +262,7 @@ int main (int argc, char *argv[]) {
     
 
         if(readersNumber > k) {
-            pthread_create(&systemTID[k + writersNumber], NULL, reader2, (void*) id_r);
+            pthread_create(&systemTID[k + writersNumber], NULL, reader, (void*) id_r);
         }
     }
 
