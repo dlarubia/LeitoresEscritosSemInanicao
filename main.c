@@ -11,12 +11,13 @@ int threadsReading = 0;
 int threadsWriting = 0;
 
 // quantidade de leituras e escritas será efetuada
-int readings = 20;
-int writings = 20;
+int readings = 200;
+int writings = 200;
 int sharedVariable = -1;
 
-int readersNumber = 2;
-int writersNumber = 3;
+int readersNumber = 10;
+int writersNumber = 10;
+FILE *fp;
 
 pthread_mutex_t mutex_r, mutex_w;
 sem_t writers, readers;
@@ -56,6 +57,7 @@ void *writer(void *id) {
 
         pthread_mutex_lock(&turnProtection);
         printf("A thread %d está aguardando permissão para escrita.\n", tid);
+        fprintf(fp, "quantificadorDeOperacoes(%d, %d)\n", tid, 0);
         while (turn != 0) {
             pthread_cond_wait(&permissionToWrite, &turnProtection);
         }
@@ -64,6 +66,7 @@ void *writer(void *id) {
         sharedVariable = tid;
         //pthread_mutex_lock(&printControl);
         printf("A thread %d escreveu o valor -> %d <-\n", tid, sharedVariable);
+        fprintf(fp, "quantificadorDeOperacoes(%d, %d)\n", tid, 1);
         //pthread_mutex_unlock(&printControl);
         pthread_mutex_unlock(&turnProtection);
 
@@ -99,11 +102,13 @@ void *reader(void *id) {
 
         pthread_mutex_lock(&turnProtection);
         printf("A thread %d está aguardando permissão para leitura.\n", tid);
+        fprintf(fp, "quantificadorDeOperacoes(%d, %d)\n", tid, 0);
         while (turn != 1) {
             pthread_cond_wait(&permissionToRead, &turnProtection);
         }
         //pthread_mutex_lock(&printControl);
         printf("A thread %d leu a variável compartilhada com o valor -> %d\n", tid, sharedVariable);
+        fprintf(fp, "quantificadorDeOperacoes(%d, %d)\n", tid, 2);
         //pthread_mutex_lock(&printControl);
         turn = (turn + 1) % 2;
         pthread_mutex_unlock(&turnProtection);
@@ -231,6 +236,7 @@ int main (int argc, char *argv[]) {
     //Instanciação de variáveis
     int threadsNumber = readersNumber + writersNumber;
     pthread_t *systemTID;
+    fp = fopen("log.txt", "w");
 
     //Inicialização de semáforos e mutex
     pthread_mutex_init(&readingsControl, NULL);
@@ -239,11 +245,7 @@ int main (int argc, char *argv[]) {
     pthread_mutex_init(&flag, NULL);
     pthread_mutex_init(&bar, NULL);
     pthread_cond_init(&cond_bar, NULL);
-    
-    /**
-    int readersNumber;
-    int writersNumber;
-    int writings, readings;
+
     
     //Leitura entrada padrão
 	printf("Entre com o numero de threads escritoras\n");
@@ -254,7 +256,8 @@ int main (int argc, char *argv[]) {
 	scanf("%d", &writings);
 	printf("Entre com o numero de leituras\n");
 	scanf("%d", &readings);
-    **/
+    
+    fprintf(fp, "inicializaEstruturas(%d, %d, %d, %d)\n", readersNumber, writersNumber, readings, writings);
 
 
     //Inicialização de threads
